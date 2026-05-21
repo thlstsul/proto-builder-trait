@@ -1,7 +1,7 @@
 use crate::utils::{
     derive_builder_attr, serde_as_attr, serde_attr, sqlx_from_row_attr, sqlx_type_attr,
 };
-use tonic_build::Builder;
+use tonic_prost_build::Builder;
 
 /// provide extra attributes to the generated protobuf code easily
 pub trait BuilderAttributes {
@@ -120,13 +120,23 @@ impl BuilderAttributes for Builder {
 mod tests {
     use super::*;
     use std::fs;
+    use std::sync::Once;
     use tempfile::tempdir;
+
+    static INIT: Once = Once::new();
+
+    fn init() {
+        INIT.call_once(|| {
+            std::env::set_var("PROTOC", protoc_bin_vendored::protoc_bin_path().unwrap());
+        });
+    }
 
     #[test]
     fn test_tonic_build_with_extra_attributes_should_work() {
+        init();
         let path = tempdir().unwrap();
         let filename = path.path().join("todo.rs");
-        tonic_build::configure()
+        tonic_prost_build::configure()
             .out_dir(path.path())
             .with_serde(
                 &["todo.Todo", "todo.TodoStatus"],
@@ -165,7 +175,7 @@ mod tests {
         #[derive(derive_builder::Builder)]
         #[builder(setter(into, strip_option), default)]
         #[builder(build_fn(name = "private_build"))]
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct Todo {
             #[prost(string, tag = "1")]
             pub id: ::prost::alloc::string::String,
@@ -184,24 +194,24 @@ mod tests {
             #[derive(Copy)]
             pub updated_at: ::core::option::Option<::prost_types::Timestamp>,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct GetTodosRequest {
             #[prost(string, repeated, tag = "1")]
             pub id: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct CreateTodoRequest {
             #[prost(string, tag = "1")]
             pub title: ::prost::alloc::string::String,
             #[prost(string, tag = "2")]
             pub description: ::prost::alloc::string::String,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct DeleteTodoRequest {
             #[prost(string, tag = "1")]
             pub id: ::prost::alloc::string::String,
         }
-        #[derive(Clone, Copy, PartialEq, ::prost::Message)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct DeleteTodoResponse {}
         #[derive(serde::Serialize, serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
@@ -262,7 +272,7 @@ mod tests {
             }
             impl<T> TodoServiceClient<T>
             where
-                T: tonic::client::GrpcService<tonic::body::BoxBody>,
+                T: tonic::client::GrpcService<tonic::body::Body>,
                 T::Error: Into<StdError>,
                 T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
                 <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
@@ -283,13 +293,13 @@ mod tests {
                     F: tonic::service::Interceptor,
                     T::ResponseBody: Default,
                     T: tonic::codegen::Service<
-                        http::Request<tonic::body::BoxBody>,
+                        http::Request<tonic::body::Body>,
                         Response = http::Response<
-                            <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
+                            <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                         >,
                     >,
                     <T as tonic::codegen::Service<
-                        http::Request<tonic::body::BoxBody>,
+                        http::Request<tonic::body::Body>,
                     >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
                 {
                     TodoServiceClient::new(InterceptedService::new(inner, interceptor))
@@ -340,7 +350,7 @@ mod tests {
                                 format!("Service was not ready: {}", e.into()),
                             )
                         })?;
-                    let codec = tonic::codec::ProstCodec::default();
+                    let codec = tonic_prost::ProstCodec::default();
                     let path = http::uri::PathAndQuery::from_static(
                         "/todo.TodoService/GetTodos",
                     );
@@ -360,7 +370,7 @@ mod tests {
                                 format!("Service was not ready: {}", e.into()),
                             )
                         })?;
-                    let codec = tonic::codec::ProstCodec::default();
+                    let codec = tonic_prost::ProstCodec::default();
                     let path = http::uri::PathAndQuery::from_static(
                         "/todo.TodoService/CreateTodo",
                     );
@@ -381,7 +391,7 @@ mod tests {
                                 format!("Service was not ready: {}", e.into()),
                             )
                         })?;
-                    let codec = tonic::codec::ProstCodec::default();
+                    let codec = tonic_prost::ProstCodec::default();
                     let path = http::uri::PathAndQuery::from_static(
                         "/todo.TodoService/UpdateTodo",
                     );
@@ -405,7 +415,7 @@ mod tests {
                                 format!("Service was not ready: {}", e.into()),
                             )
                         })?;
-                    let codec = tonic::codec::ProstCodec::default();
+                    let codec = tonic_prost::ProstCodec::default();
                     let path = http::uri::PathAndQuery::from_static(
                         "/todo.TodoService/DeleteTodo",
                     );
@@ -520,7 +530,7 @@ mod tests {
                 B: Body + std::marker::Send + 'static,
                 B::Error: Into<StdError> + std::marker::Send + 'static,
             {
-                type Response = http::Response<tonic::body::BoxBody>;
+                type Response = http::Response<tonic::body::Body>;
                 type Error = std::convert::Infallible;
                 type Future = BoxFuture<Self::Response, Self::Error>;
                 fn poll_ready(
@@ -562,7 +572,7 @@ mod tests {
                             let inner = self.inner.clone();
                             let fut = async move {
                                 let method = GetTodosSvc(inner);
-                                let codec = tonic::codec::ProstCodec::default();
+                                let codec = tonic_prost::ProstCodec::default();
                                 let mut grpc = tonic::server::Grpc::new(codec)
                                     .apply_compression_config(
                                         accept_compression_encodings,
@@ -607,7 +617,7 @@ mod tests {
                             let inner = self.inner.clone();
                             let fut = async move {
                                 let method = CreateTodoSvc(inner);
-                                let codec = tonic::codec::ProstCodec::default();
+                                let codec = tonic_prost::ProstCodec::default();
                                 let mut grpc = tonic::server::Grpc::new(codec)
                                     .apply_compression_config(
                                         accept_compression_encodings,
@@ -650,7 +660,7 @@ mod tests {
                             let inner = self.inner.clone();
                             let fut = async move {
                                 let method = UpdateTodoSvc(inner);
-                                let codec = tonic::codec::ProstCodec::default();
+                                let codec = tonic_prost::ProstCodec::default();
                                 let mut grpc = tonic::server::Grpc::new(codec)
                                     .apply_compression_config(
                                         accept_compression_encodings,
@@ -695,7 +705,7 @@ mod tests {
                             let inner = self.inner.clone();
                             let fut = async move {
                                 let method = DeleteTodoSvc(inner);
-                                let codec = tonic::codec::ProstCodec::default();
+                                let codec = tonic_prost::ProstCodec::default();
                                 let mut grpc = tonic::server::Grpc::new(codec)
                                     .apply_compression_config(
                                         accept_compression_encodings,
@@ -712,7 +722,9 @@ mod tests {
                         }
                         _ => {
                             Box::pin(async move {
-                                let mut response = http::Response::new(empty_body());
+                                let mut response = http::Response::new(
+                                    tonic::body::Body::default(),
+                                );
                                 let headers = response.headers_mut();
                                 headers
                                     .insert(

@@ -1,6 +1,6 @@
 # Proto Builder Trait
 
-This crate simplifies the work to add extra attributes for prost-build/tonic-build generated code.
+This crate simplifies the work to add extra attributes for prost-build/tonic-prost-build generated code.
 
 ## Usage
 

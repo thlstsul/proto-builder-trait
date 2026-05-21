@@ -1,6 +1,6 @@
 [package]
 name = "proto-builder-trait"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2021"
 license = "MIT"
 documentation = "https://docs.rs/proto-builder-trait"
@@ -15,13 +15,14 @@ categories = ["development-tools"]
 
 [features]
 default = ["tonic", "prost"]
-tonic = ["tonic-build"]
+tonic = ["tonic-prost-build"]
 prost = ["prost-build"]
 
 [dependencies]
-prost-build = { version = "0.13.3", optional = true }
-tonic-build = { version = "0.12.3", optional = true }
+prost-build = { version = "0.14.3", optional = true }
+tonic-prost-build = { version = "0.14.6", optional = true }
 
 [dev-dependencies]
-insta = "1.40.0"
-tempfile = "3.13.0"
+insta = "1.47.2"
+tempfile = "3.27.0"
+protoc-bin-vendored = "3.1.0"

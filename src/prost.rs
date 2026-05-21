@@ -149,10 +149,20 @@ impl BuilderAttributes for Config {
 mod tests {
     use super::*;
     use std::fs;
+    use std::sync::Once;
     use tempfile::tempdir;
+
+    static INIT: Once = Once::new();
+
+    fn init() {
+        INIT.call_once(|| {
+            std::env::set_var("PROTOC", protoc_bin_vendored::protoc_bin_path().unwrap());
+        });
+    }
 
     #[test]
     fn test_prost_build_with_extra_attributes_should_work() {
+        init();
         let path = tempdir().unwrap();
         let filename = path.path().join("todo.rs");
         Config::default()
@@ -194,7 +204,7 @@ mod tests {
         #[derive(derive_builder::Builder)]
         #[builder(setter(into, strip_option), default)]
         #[builder(build_fn(name = "private_build"))]
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct Todo {
             #[prost(string, tag = "1")]
             pub id: ::prost::alloc::string::String,
@@ -213,24 +223,24 @@ mod tests {
             #[derive(Copy)]
             pub updated_at: ::core::option::Option<::prost_types::Timestamp>,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct GetTodosRequest {
             #[prost(string, repeated, tag = "1")]
             pub id: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct CreateTodoRequest {
             #[prost(string, tag = "1")]
             pub title: ::prost::alloc::string::String,
             #[prost(string, tag = "2")]
             pub description: ::prost::alloc::string::String,
         }
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct DeleteTodoRequest {
             #[prost(string, tag = "1")]
             pub id: ::prost::alloc::string::String,
         }
-        #[derive(Clone, Copy, PartialEq, ::prost::Message)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::prost::Message)]
         pub struct DeleteTodoResponse {}
         #[derive(serde::Serialize, serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
